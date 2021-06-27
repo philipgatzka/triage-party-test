@@ -1,0 +1,131 @@
+---
+settings:
+  name: platform
+  min_similarity: 0.75
+  repos:
+    - https://github.com/shopware/platform
+    - https://github.com/shopware/development
+    - https://github.com/shopware/production
+
+  member-roles:
+   - collaborator
+   - owner
+   - member
+  members: []
+
+collections:
+  - id: daily
+    name: Daily Triage
+    dedup: false
+    description: To be emptied out daily
+    rules:
+      - pr-needs-comment
+      - many-reactions
+      - many-commenters
+
+  - id: todo
+    name: Todo
+    dedup: false
+    description: PR's ready & waiting for review
+    rules:
+      - pr-reviewable
+
+  - id: __open__
+    name: All open PR's and Issues that should be considered for repository stats (hidden)
+    used_for_statistics: true
+    hidden: true
+    rules:
+      - open-prs
+
+rules:
+  pr-needs-comment:
+    name: "Unresponded, older than 1 day"
+    resolution: "Respond to the PR"
+    type: pull_request
+    filters:
+      - tag: "!commented"
+      - tag: "recv"
+      - created: +1d
+
+  pr-reviewable:
+    name: "Pull Requests: Review Ready"
+    resolution: "Review requests or mark them as do-not-merge/work-in-progress"
+    type: pull_request
+    filters:
+      - label: "!incomplete"
+      - tag: "!changes-requested"
+      - tag: "!send"
+      - tag: "!member-last"
+      - updated: +1d
+
+  many-reactions:
+    name: "many reactions, low priority, no recent comment"
+    resolution: "Bump the priority, add a comment"
+    type: pull_request
+    filters:
+      - reactions: ">3"
+      - reactions-per-month: ">1"
+      - responded: +60d
+
+  many-commenters:
+    name: "many commenters, low priority, no recent comment"
+    resolution: "Consider increasing priority"
+    type: pull_request
+    filters:
+      - commenters: ">3"
+      - commenters-per-month: ">1.9"
+      - created: "+30d"
+      - tag: "!member-last"
+      - responded: "+60d"
+
+  issue-zombies:
+    name: "Screaming into the void"
+    resolution: "Reopen, or ask folks to open a new issue"
+    filters:
+      - state: closed
+      - comments-while-closed: ">1"
+      - updated: "-14d"
+      - tag: "!member-last"
+
+  birthday:
+    name: "Forgotten Birthdays - over a year old, no response in 6 months"
+    resolution: "Close or comment on what it would take to address this issue"
+    filters:
+      - created: +365d
+      - responded: +180d
+
+  pr-approved-stale:
+    name: "Pull requests: Approved and getting old"
+    type: pull_request
+    filters:
+      - label: "!incomplete"
+      - label: "scheduled"
+      - updated: +5d
+      - responded: +2d
+
+  pr-unapproved-stale:
+    name: "Pull Requests: Stale"
+    resolution: "Add comment and/or close PR"
+    type: pull_request
+    filters:
+      - created: +20d
+      - updated: +5d
+      - responded: +2d
+
+  similar-prs:
+    name: "Similar Pull Requests"
+    type: pull_request
+    resolution: Close as duplicate or give a better title
+    filters:
+      - tag: similar
+
+  similar-issues:
+    name: "Similar Issues"
+    type: issue
+    resolution: Close as duplicate or give a better title
+    filters:
+      - tag: similar
+
+  open-prs:
+    name: "Open PRs"
+    type: pull_request

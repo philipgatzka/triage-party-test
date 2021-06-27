@@ -1,0 +1,35 @@
+version: "3.3"
+services:
+  triage-party:
+    build:
+      context: https://github.com/google/triage-party.git
+      dockerfile: Dockerfile
+    ports:
+      - 8080
+    environment:
+      - GITHUB_TOKEN
+    volumes:
+      - ./config.yaml:/app/config/config.yaml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tp.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.tp.entrypoints=websecure"
+      - "traefik.http.routers.tp.tls.certresolver=tpresolver"
+  proxy:
+    image: traefik:v2.4
+    command: >
+      --providers.docker=true
+      --providers.docker.exposedbydefault=false
+      --entryPoints.web.address=:80
+      --entryPoints.websecure.address=:443
+      --certificatesresolvers.tpresolver.acme.email=${ADMIN_MAIL}
+      --certificatesresolvers.tpresolver.acme.storage=/letsencrypt/acme.json
+      --certificatesresolvers.tpresolver.acme.httpchallenge=true
+      --certificatesresolvers.tpresolver.acme.httpchallenge.entrypoint=web
+      --certificatesresolvers.tpresolver.acme.caserver=${LE_CA_SERVER}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./letsencrypt:/letsencrypt
